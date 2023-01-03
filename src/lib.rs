@@ -29,37 +29,12 @@ impl MagicPacket {
     
     /// Creates a new `MagicPacket` intended for `mac_address` (but doesn't send it yet).
     pub fn new(mac_address: &[u8; 6]) -> MagicPacket {
-        let mut magic_bytes: [u8; 102];
-        
-        // We use `unsafe` code to skip unnecessary array initialization and bounds checking.
-        unsafe {
-            magic_bytes = std::mem::uninitialized();
-            
-            // Copy the header to the beginning.
-            let mut src: *const u8 = &MAGIC_BYTES_HEADER[0];
-            let mut dst: *mut u8 = &mut magic_bytes[0];
-            dst.copy_from_nonoverlapping(src, 6);
-            
-            // Copy the MAC address once from the argument.
-            src = &mac_address[0];
-            dst = dst.offset(6);
-            dst.copy_from_nonoverlapping(src, 6);
+        let mut magic_bytes = [0xFF; 102];
 
-            // Repeat the MAC.
-            let src: *const u8 = dst; // src points to magic_bytes[6]
-            dst = dst.offset(6);
-            dst.copy_from_nonoverlapping(src, 6);
-            
-            dst = dst.offset(6);
-            dst.copy_from_nonoverlapping(src, 12);
-            
-            dst = dst.offset(12);
-            dst.copy_from_nonoverlapping(src, 24);
-            
-            dst = dst.offset(24);
-            dst.copy_from_nonoverlapping(src, 48);
+        for chunk in magic_bytes[6..].chunks_exact_mut(6) {
+            chunk.copy_from_slice(mac_address);
         }
-        
+
         MagicPacket { magic_bytes }
     }
     
@@ -90,5 +65,3 @@ impl MagicPacket {
     }
     
 }
-
-const MAGIC_BYTES_HEADER: [u8; 6] = [0xFF; 6];
